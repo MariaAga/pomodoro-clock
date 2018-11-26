@@ -1,0 +1,166 @@
+class Pomodoro extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      breakLength: 5,
+      sessionLength: 25,
+      timeLeft: 25 * 60,
+      start: false,
+      currTime: 's',
+      intervalID: ''
+    };
+    this.timerStart = this.timerStart.bind(this);
+    this.tick = this.tick.bind(this);
+  }
+
+  reset = () => {
+    this.setState({
+      breakLength: 5,
+      sessionLength: 25,
+      timeLeft: 25 * 60,
+      currTime: 's',
+      start: false
+    });
+    const audio = document.querySelector(`#beep`);
+ 
+    audio.pause();
+    audio.currentTime = 0;
+    clearInterval(this.state.intervalID);
+  };
+
+  handleController = (time, action) => {
+    if (this.state.start) return;
+    timeLength =
+      time === 'break' ? this.state.breakLength : this.state.sessionLength;
+    if (action === '-') {
+      if (timeLength <= 1) return;
+      timeLength--;
+    } else if (action === '+') {
+      if (timeLength >= 60) return;
+      timeLength++;
+    }
+    if (time === 'break') {
+      this.setState({ breakLength: timeLength });
+      if (this.state.currTime === 'b') {
+        this.setState({ timeLeft: timeLength * 60 });
+      }
+    } else if (time === 'session') {
+      this.setState({ sessionLength: timeLength });
+      if (this.state.currTime === 's') {
+        this.setState({ timeLeft: timeLength * 60 });
+      }
+    }
+  };
+
+  startStop = () => {
+    if (this.state.start) {
+      clearInterval(this.state.intervalID);
+      this.setState({ start: false });
+    } else {
+      this.setState({ start: true });
+      this.timerStart();
+    }
+  };
+
+  timerStart() {
+    this.setState({ intervalID: setInterval(this.tick, 1000) });
+  }
+  tick() {
+    var minutes = Math.floor(this.state.timeLeft / 60);
+    var seconds = this.state.timeLeft % 60;
+
+    if (minutes <= 0 && seconds <= 0) {
+      clearInterval(this.state.intervalID);
+      this.timerSwitch();
+    }
+
+    this.setState({ timeLeft: this.state.timeLeft - 1 });
+  }
+
+  timeLeftToString() {
+    var minutes = Math.floor(this.state.timeLeft / 60);
+    var seconds = this.state.timeLeft % 60;
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    seconds = seconds < 10 ? '0' + seconds : seconds;
+    return minutes + ':' + seconds;
+  }
+
+  timerSwitch = () => {
+    const audio = document.querySelector(`#beep`);
+    audio.volume = 0.1;
+    audio.currentTime = 0;
+    audio.play();
+    const nextTime = this.state.currTime === 's' ? 'b' : 's';
+    const timeLeft =
+      (nextTime === 's' ? this.state.sessionLength : this.state.breakLength) *
+        60 +
+      1;
+    this.setState({ currTime: nextTime, timeLeft });
+    this.timerStart();
+  };
+  render() {
+    return (
+      <div class="pomodoro-clock">
+        <div class="break">
+          <label class="length-label" id="break-label">
+            Break Length
+          </label>
+          <button
+            class="controller"
+            id="break-increment"
+            onClick={() => this.handleController('break', '+')}
+          >
+            +
+          </button>
+          <label class="length-time" id="break-length">
+            {this.state.breakLength}
+          </label>
+          <button
+            class="controller"
+            id="break-decrement"
+            onClick={() => this.handleController('break', '-')}
+          >
+            -
+          </button>
+        </div>
+        <div class="session">
+          <label class="length-label" id="session-label">
+            Session Length
+          </label>
+          <button
+            class="controller"
+            id="session-increment"
+            onClick={() => this.handleController('session', '+')}
+          >
+            +
+          </button>
+          <label class="length-time" id="session-length">
+            {this.state.sessionLength}
+          </label>
+          <button
+            class="controller"
+            id="session-decrement"
+            onClick={() => this.handleController('session', '-')}
+          >
+            -
+          </button>
+        </div>
+        <div class="timer">
+          <label id="timer-label">{this.state.currTime==='s'? "Session":"Break"}</label>
+          <label id="time-left">{this.timeLeftToString()}</label>
+          <div>
+            <audio id="beep" src="https://goo.gl/65cBl1"/>
+            <button id="start_stop" onClick={this.startStop}>
+              Start/Stop
+            </button>
+            <button id="reset" onClick={this.reset}>
+              reset
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(<Pomodoro />, document.getElementById('pomodoro'));
